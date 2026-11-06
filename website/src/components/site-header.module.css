@@ -1,0 +1,151 @@
+.wrap {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.top {
+  width: min(1320px, calc(100% - 32px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0 8px;
+}
+
+.logoLink {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+}
+
+.city {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 10px;
+  height: 44px;
+  background: #fff;
+  min-width: 148px;
+}
+
+.city select {
+  border: 0;
+  background: transparent;
+  outline: none;
+  width: 100%;
+}
+
+.pin {
+  color: var(--primary);
+}
+
+.search {
+  display: flex;
+  height: 44px;
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.search input {
+  flex: 1;
+  border: 0;
+  padding: 0 14px;
+  outline: none;
+  background: transparent;
+}
+
+.search button {
+  width: 52px;
+  border: 0;
+  background: var(--primary);
+  cursor: pointer;
+}
+
+.search button:hover {
+  background: var(--primary-hover);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ghost:hover {
+  background: var(--surface2);
+}
+
+.post {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.post:hover {
+  background: var(--primary-hover);
+}
+
+.chips {
+  width: min(1320px, calc(100% - 32px));
+  margin: 0 auto;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0 12px;
+}
+
+.chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff;
+  color: var(--text);
+}
+
+.chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+@media (max-width: 980px) {
+  .top {
+    grid-template-columns: 1fr auto;
+  }
+  .city,
+  .search {
+    grid-column: 1 / -1;
+  }
+  .actions .ghost span + * {
+    display: none;
+  }
+}

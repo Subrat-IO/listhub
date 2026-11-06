@@ -1,0 +1,401 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  SOLD
+  REMOVED
+  REJECTED
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum ConversationKind {
+  LISTING_INQUIRY
+  GENERAL
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Char(36)
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  profile         Profile?
+  userRoles       UserRole[]
+  sessions        Session[]
+  listings        Listing[]       @relation("SellerListings")
+  favorites       Favorite[]
+  buyerInterests  BuyerInterest[] @relation("BuyerInterests")
+  reportsFiled    Report[]        @relation("ReporterReports")
+  moderationActions ModerationAction[] @relation("ModeratorActions")
+  auditLogs       AuditLog[]      @relation("ActorAuditLogs")
+  messages        Message[]       @relation("UserMessages")
+  conversationParticipants ConversationParticipant[]
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String   @unique @map("user_id") @db.Char(36)
+  displayName String   @map("display_name")
+  bio         String?  @db.Text
+  avatarUrl   String?  @map("avatar_url")
+  location    String?
+  phone       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Role {
+  id        String   @id @default(uuid()) @db.Char(36)
+  name      RoleName @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userRoles UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId String @map("user_id") @db.Char(36)
+  roleId String @map("role_id") @db.Char(36)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Session {
+  sid       String   @id
+  expires   DateTime
+  data      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  userId    String?  @map("user_id") @db.Char(36)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([expires])
+  @@map("sessions")
+}
+
+model Category {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  parentId    String?  @map("parent_id") @db.Char(36)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryHierarchy")
+
+  attributes CategoryAttribute[]
+  listings   Listing[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model CategoryAttribute {
+  id         String   @id @default(uuid()) @db.Char(36)
+  categoryId String   @map("category_id") @db.Char(36)
+  key        String
+  label      String
+  valueType  String   @map("value_type") // string, number, boolean
+  required   Boolean  @default(false)
+  sortOrder  Int      @default(0) @map("sort_order")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  listingAttributes ListingAttribute[]
+
+  @@unique([categoryId, key])
+  @@index([categoryId])
+  @@map("category_attributes")
+}
+
+model Listing {
+  id          String        @id @default(uuid()) @db.Char(36)
+  sellerId    String        @map("seller_id") @db.Char(36)
+  categoryId  String        @map("category_id") @db.Char(36)
+  title       String
+  description String        @db.Text
+  askingPrice Decimal       @map("asking_price") @db.Decimal(14, 2)
+  currency    String        @default("USD") @db.Char(3)
+  location    String?
+  status      ListingStatus @default(ACTIVE)
+  featured    Boolean       @default(false)
+  viewCount   Int           @default(0) @map("view_count")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  seller   User     @relation("SellerListings", fields: [sellerId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  images      ListingImage[]
+  attributes  ListingAttribute[]
+  fees        ListingFee[]
+  terms       ListingTerm[]
+  interests   BuyerInterest[]
+  favorites   Favorite[]
+  reports     Report[]
+  conversations Conversation[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+  @@map("listings")
+}
+
+model ListingImage {
+  id        String   @id @default(uuid()) @db.Char(36)
+  listingId String   @map("listing_id") @db.Char(36)
+  url       String
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_images")
+}
+
+model ListingAttribute {
+  id                  String @id @default(uuid()) @db.Char(36)
+  listingId           String @map("listing_id") @db.Char(36)
+  categoryAttributeId String @map("category_attribute_id") @db.Char(36)
+  value               String @db.Text
+
+  listing           Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  categoryAttribute CategoryAttribute @relation(fields: [categoryAttributeId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, categoryAttributeId])
+  @@index([listingId])
+  @@map("listing_attributes")
+}
+
+model ListingFee {
+  id        String   @id @default(uuid()) @db.Char(36)
+  listingId String   @map("listing_id") @db.Char(36)
+  label     String
+  amount    Decimal  @db.Decimal(14, 2)
+  currency  String   @default("USD") @db.Char(3)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_fees")
+}
+
+model ListingTerm {
+  id        String   @id @default(uuid()) @db.Char(36)
+  listingId String   @map("listing_id") @db.Char(36)
+  content   String   @db.Text
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_terms")
+}
+
+model BuyerInterest {
+  id            String         @id @default(uuid()) @db.Char(36)
+  listingId     String         @map("listing_id") @db.Char(36)
+  buyerId       String         @map("buyer_id") @db.Char(36)
+  message       String?        @db.Text
+  acceptedTerms Boolean        @default(false) @map("accepted_terms")
+  status        InterestStatus @default(PENDING)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer   User    @relation("BuyerInterests", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  agreement InterestAgreement?
+
+  @@unique([listingId, buyerId])
+  @@index([listingId])
+  @@index([buyerId])
+  @@map("buyer_interests")
+}
+
+model InterestAgreement {
+  id         String   @id @default(uuid()) @db.Char(36)
+  interestId String   @unique @map("interest_id") @db.Char(36)
+  agreedAt   DateTime @default(now()) @map("agreed_at")
+  snapshot   String?  @db.Text // JSON snapshot of terms at selection
+
+  interest BuyerInterest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@map("interest_agreements")
+}
+
+model Conversation {
+  id        String           @id @default(uuid()) @db.Char(36)
+  listingId String?          @map("listing_id") @db.Char(36)
+  kind      ConversationKind @default(LISTING_INQUIRY)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  listing      Listing?                    @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([listingId])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  conversationId String @map("conversation_id") @db.Char(36)
+  userId         String @map("user_id") @db.Char(36)
+  lastReadAt     DateTime? @map("last_read_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String   @id @default(uuid()) @db.Char(36)
+  conversationId String   @map("conversation_id") @db.Char(36)
+  senderId       String   @map("sender_id") @db.Char(36)
+  body           String   @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("UserMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@map("messages")
+}
+
+model Favorite {
+  userId    String   @map("user_id") @db.Char(36)
+  listingId String   @map("listing_id") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@id([userId, listingId])
+  @@index([listingId])
+  @@map("favorites")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  title     String
+  body      String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model Report {
+  id          String       @id @default(uuid()) @db.Char(36)
+  reporterId  String       @map("reporter_id") @db.Char(36)
+  listingId   String?      @map("listing_id") @db.Char(36)
+  reason      String       @db.Text
+  status      ReportStatus @default(OPEN)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  reporter User     @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  listing  Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([listingId])
+  @@index([status])
+  @@map("reports")
+}
+
+model ModerationAction {
+  id         String   @id @default(uuid()) @db.Char(36)
+  moderatorId String  @map("moderator_id") @db.Char(36)
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id") @db.Char(36)
+  action     String
+  note       String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  moderator User @relation("ModeratorActions", fields: [moderatorId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@map("moderation_actions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Char(36)
+  actorId    String?  @map("actor_id") @db.Char(36)
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id") @db.Char(36)
+  metadata   String?  @db.Text
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

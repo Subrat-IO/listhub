@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
 
-# Environment and secrets
+# Environment files (single-file policy per app; copy `.env.example` → `.env` locally)
 .env
 .env.*
 !.env.example
