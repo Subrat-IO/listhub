@@ -1,41 +1,28 @@
 import Link from "next/link";
 import type { Listing } from "@/lib/types";
+import { formatInr, timeAgo } from "@/lib/format";
+import { FavoriteButton } from "./FavoriteButton";
 import styles from "./listing-card.module.css";
-
-function money(listing: Listing) {
-  const n = Number(listing.askingPrice);
-  if (Number.isNaN(n)) return `${listing.askingPrice} ${listing.currency}`;
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: listing.currency || "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
 
 export function ListingCard({ listing }: { listing: Listing }) {
   const img = listing.images[0]?.url;
-  const fees = listing.fees?.length
-    ? `${listing.fees.length} disclosed fee${listing.fees.length === 1 ? "" : "s"}`
-    : "No extra fees listed";
-
   return (
-    <Link href={`/listing/${listing.id}`} className={styles.card}>
-      <div className={styles.thumb} style={img ? { backgroundImage: `url(${img})` } : undefined} />
-      <div className={styles.body}>
-        <div className={styles.row}>
-          <div className={styles.title}>{listing.title}</div>
-          {listing.featured ? <span className={styles.badge}>Featured</span> : null}
-        </div>
-        <div className={styles.meta}>
-          <span>{listing.category.name}</span>
-          <span aria-hidden>•</span>
-          <span>{listing.location ?? "Location TBD"}</span>
-        </div>
-        <div className={styles.priceRow}>
-          <div className={styles.price}>{money(listing)}</div>
-          <div className={styles.fees}>{fees}</div>
-        </div>
+    <article className={styles.card}>
+      <div className={styles.media}>
+        <Link href={`/listing/${listing.id}`}>
+          {img ? <img src={img} alt="" /> : <div className={styles.placeholder} />}
+        </Link>
+        <FavoriteButton listingId={listing.id} />
       </div>
-    </Link>
+      <Link href={`/listing/${listing.id}`} className={styles.body}>
+        <div className={styles.price}>{formatInr(listing.askingPrice)}</div>
+        <div className={styles.title}>{listing.title}</div>
+        <div className={styles.meta}>
+          <span>{listing.location ?? "India"}</span>
+          <span>·</span>
+          <span>{timeAgo(listing.createdAt)}</span>
+        </div>
+      </Link>
+    </article>
   );
 }

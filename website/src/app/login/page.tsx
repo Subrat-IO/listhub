@@ -31,6 +31,7 @@ export default function LoginPage() {
 
   return (
     <div className={formStyles.card} style={{ maxWidth: 520 }}>
+      <img src="/listhub-logo.jpg" alt="ListHub" style={{ height: 64, objectFit: "contain", marginBottom: 8 }} />
       <div className={formStyles.title}>Sign in</div>
       <form onSubmit={onSubmit}>
         <div className={formStyles.row}>

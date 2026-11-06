@@ -1,84 +1,98 @@
 import Link from "next/link";
-import { HeroBanner } from "@/components/HeroBanner";
+import { cookies } from "next/headers";
 import { ListingCard } from "@/components/ListingCard";
-import { publicEnv } from "@/lib/env";
+import { BROWSE_TILES } from "@/lib/catalog";
 import { serverApiFetch } from "@/lib/server-api";
-import type { Listing } from "@/lib/types";
-import { toQueryString } from "@/lib/query";
+import type { Category, Listing } from "@/lib/types";
 import styles from "./home.module.css";
 
 export const dynamic = "force-dynamic";
 
 type ListingsResponse = { listings: Listing[] };
-
-async function safeFeatured(): Promise<Listing[]> {
-  try {
-    const res = await serverApiFetch<ListingsResponse>(`/listings${toQueryString({ featured: "true" })}`);
-    return res.listings.slice(0, 6);
-  } catch {
-    return [];
-  }
-}
-
-async function safeRecent(): Promise<Listing[]> {
-  try {
-    const res = await serverApiFetch<ListingsResponse>(`/listings${toQueryString({ pageSize: "8" })}`);
-    return res.listings;
-  } catch {
-    return [];
-  }
-}
+type CategoriesResponse = { categories: Category[] };
 
 export default async function HomePage() {
-  const [featured, recent] = await Promise.all([safeFeatured(), safeRecent()]);
+  const jar = await cookies();
+  const city = jar.get("listhub_city")?.value
+    ? decodeURIComponent(jar.get("listhub_city")!.value)
+    : "Bengaluru";
+
+  let listings: Listing[] = [];
+  let categories: Category[] = [];
+  try {
+    const [listRes, catRes] = await Promise.all([
+      serverApiFetch<ListingsResponse>(`/listings?pageSize=16&location=${encodeURIComponent(city)}`),
+      serverApiFetch<CategoriesResponse>("/categories"),
+    ]);
+    listings = listRes.listings;
+    categories = catRes.categories;
+  } catch {
+    try {
+      const listRes = await serverApiFetch<ListingsResponse>("/listings?pageSize=16");
+      listings = listRes.listings;
+    } catch {
+      listings = [];
+    }
+  }
+
+  const bySlug = new Map(categories.map((c) => [c.slug, c.id]));
 
   return (
     <div>
-      <HeroBanner />
-
-      <div className={styles.section}>
-        <div className={styles.gridTitleRow}>
-          <div className={styles.gridTitle}>Featured listings</div>
-          <Link className={styles.gridSub} href="/explore?featured=true">
-            View all
+      <section className={styles.hero}>
+        <div>
+          <h1>
+            Sell Anything at Your Own Price
+            <span>Buy and sell anything near you</span>
+          </h1>
+          <p>Cars, bikes, phones, furniture and more in {city}.</p>
+          <Link href="/explore" className={styles.cta}>
+            Browse Listings →
           </Link>
         </div>
-        {featured.length === 0 ? (
-          <p style={{ color: "var(--muted)", fontSize: 14 }}>
-            No featured listings yet. Start the API &amp; database, then feature items from{" "}
-            <Link href="http://localhost:3001/dashboard" style={{ textDecoration: "underline" }}>
-              ListHub Admin
-            </Link>
-            .
-          </p>
+        <div className={styles.art} aria-hidden>
+          <div className={styles.phone}>
+            <div className={styles.tag}>₹</div>
+          </div>
+          <div className={styles.skyline} />
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Browse by Category</h2>
+        <div className={styles.tiles}>
+          {BROWSE_TILES.map((tile) => {
+            const id = bySlug.get(tile.slug);
+            const href = id ? `/explore?categoryId=${id}` : `/category/${tile.slug}`;
+            return (
+              <Link key={tile.slug} href={href} className={styles.tile}>
+                <span className={styles.icon} style={{ background: tile.tint }}>
+                  {tile.emoji}
+                </span>
+                <span>{tile.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Fresh recommendations</h2>
+        {listings.length === 0 ? (
+          <p className={styles.empty}>No listings in {city} yet. Post an ad or browse all of India.</p>
         ) : (
           <div className={styles.grid}>
-            {featured.map((l) => (
-              <ListingCard key={l.id} listing={l} />
+            {listings.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
         )}
-      </div>
-
-      <div className={styles.section}>
-        <div className={styles.gridTitleRow}>
-          <div className={styles.gridTitle}>Recently listed</div>
-          <Link className={styles.gridSub} href="/explore">
-            Browse explore
+        <div className={styles.moreWrap}>
+          <Link href={`/explore?location=${encodeURIComponent(city)}`} className={styles.more}>
+            Load more
           </Link>
         </div>
-        {recent.length === 0 ? (
-          <p style={{ color: "var(--muted)", fontSize: 14 }}>
-            Connect to the backend at <code>{publicEnv.apiUrl}</code> to load live listings.
-          </p>
-        ) : (
-          <div className={styles.grid}>
-            {recent.map((l) => (
-              <ListingCard key={l.id} listing={l} />
-            ))}
-          </div>
-        )}
-      </div>
+      </section>
     </div>
   );
 }

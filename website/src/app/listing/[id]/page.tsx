@@ -92,7 +92,12 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <ListingActions listingId={listing.id} sellerId={listing.seller.id} terms={listing.terms} />
+        <ListingActions
+          listingId={listing.id}
+          sellerId={listing.seller.id}
+          terms={listing.terms}
+          askingPrice={listing.askingPrice}
+        />
       </div>
 
     </div>

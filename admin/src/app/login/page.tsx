@@ -30,6 +30,10 @@ export default function AdminLoginPage() {
 
   return (
     <div className={styles.panel} style={{ maxWidth: 520 }}>
+      <img src="/listhub-logo.jpg" alt="ListHub" style={{ height: 64, objectFit: "contain" }} />
+      <span className={styles.pill} style={{ display: "inline-block", margin: "8px 0 12px" }}>
+        ADMIN
+      </span>
       <h1 style={{ fontSize: 18, marginBottom: 10 }}>Admin sign in</h1>
       <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 12 }}>
         Uses the same centralized backend session as the public site. Only staff roles can access admin API routes.
@@ -44,7 +48,7 @@ export default function AdminLoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
         />
-        <button className={styles.btn} type="submit">
+        <button className={styles.btn} type="submit" style={{ background: "#2563eb", color: "#fff", width: "100%" }}>
           Continue
         </button>
       </form>

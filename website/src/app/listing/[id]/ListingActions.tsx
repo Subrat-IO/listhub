@@ -4,16 +4,19 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { useMe } from "@/hooks/useMe";
+import { formatInr } from "@/lib/format";
 import formStyles from "@/styles/forms.module.css";
 
 export function ListingActions({
   listingId,
   sellerId,
   terms,
+  askingPrice,
 }: {
   listingId: string;
   sellerId: string;
   terms: { content: string }[];
+  askingPrice: string;
 }) {
   const { user } = useMe();
   const router = useRouter();
@@ -31,7 +34,10 @@ export function ListingActions({
     try {
       await apiFetch(`/listings/${listingId}/interests`, {
         method: "POST",
-        body: JSON.stringify({ message: msg, acceptedTerms: accepted }),
+        body: JSON.stringify({
+          message: msg || `I'm interested at ${formatInr(askingPrice)}.`,
+          acceptedTerms: terms.length === 0 ? true : accepted,
+        }),
       });
       router.refresh();
     } catch (e) {
@@ -46,7 +52,7 @@ export function ListingActions({
         method: "POST",
         body: JSON.stringify({
           listingId,
-          initialMessage: msg || `Hi — I’m interested in this listing (${listingId}).`,
+          initialMessage: msg || `Hi — I'm interested at ${formatInr(askingPrice)}.`,
         }),
       });
       router.push(`/messages?conversationId=${encodeURIComponent(res.conversationId)}`);
@@ -83,7 +89,7 @@ export function ListingActions({
 
   return (
     <div className={formStyles.card}>
-      <div className={formStyles.title}>Take action</div>
+      <div className={formStyles.title}>Chat with the seller</div>
 
       {!user ? <div className={formStyles.muted}>Sign in to message, save favorites, or express interest.</div> : null}
 
@@ -96,7 +102,7 @@ export function ListingActions({
 
         {user && !isSeller ? (
           <button className={`${formStyles.btn} ${formStyles.btnSecondary}`} type="button" onClick={() => void startMessage()}>
-            Message seller
+            Chat
           </button>
         ) : null}
       </div>
@@ -129,10 +135,10 @@ export function ListingActions({
         <button
           className={formStyles.btn}
           type="button"
-          disabled={!canExpressInterest || !accepted}
+          disabled={!canExpressInterest || (terms.length > 0 && !accepted)}
           onClick={() => void expressInterest()}
         >
-          Express interest
+          I&apos;m Interested at {formatInr(askingPrice)}
         </button>
       </div>
 

@@ -1,27 +1,20 @@
-import Link from "next/link";
+import { cookies } from "next/headers";
 import type { ReactNode } from "react";
-import { publicEnv } from "@/lib/env";
+import { BottomNav } from "./BottomNav";
+import { SiteFooter } from "./SiteFooter";
+import { SiteHeader } from "./SiteHeader";
 import styles from "./app-shell.module.css";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export async function AppShell({ children }: { children: ReactNode }) {
+  const jar = await cookies();
+  const city = jar.get("listhub_city")?.value ? decodeURIComponent(jar.get("listhub_city")!.value) : "Bengaluru";
+
   return (
     <div className={styles.shell}>
-      <header className={styles.header}>
-        <Link href="/" className={styles.brand}>
-          {publicEnv.appName}
-        </Link>
-        <nav className={styles.nav}>
-          <Link href="/explore">Explore</Link>
-          <Link href="/category">Categories</Link>
-          <Link href="/sell">Sell</Link>
-          <Link href="/messages">Messages</Link>
-          <Link href="/account">Account</Link>
-        </nav>
-      </header>
+      <SiteHeader city={city} />
       <main className={styles.main}>{children}</main>
-      <footer className={styles.footer}>
-        <span>© {new Date().getFullYear()} {publicEnv.appName}</span>
-      </footer>
+      <SiteFooter />
+      <BottomNav />
     </div>
   );
 }

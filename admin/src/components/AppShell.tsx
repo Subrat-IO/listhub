@@ -1,31 +1,38 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { publicEnv } from "@/lib/env";
 import styles from "@/styles/admin.module.css";
+
+const LINKS = [
+  ["/dashboard", "Dashboard"],
+  ["/users", "Users"],
+  ["/listings", "Listings"],
+  ["/categories", "Categories"],
+  ["/reports", "Reports"],
+  ["/moderation", "Moderation"],
+  ["/featured", "Featured"],
+  ["/analytics", "Analytics"],
+  ["/audit-logs", "Audit logs"],
+  ["/settings", "Settings"],
+  ["/login", "Login"],
+] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className={styles.shell}>
-      <header className={styles.top}>
-        <Link href="/dashboard" className={styles.brand}>
-          {publicEnv.appName}
+      <aside className={styles.side}>
+        <Link href="/dashboard" className={styles.brandRow}>
+          <img src="/listhub-logo.jpg" alt="ListHub" />
+          <span className={styles.pill}>ADMIN</span>
         </Link>
         <nav className={styles.nav}>
-          <Link href="/dashboard">Dashboard</Link>
-          <Link href="/users">Users</Link>
-          <Link href="/listings">Listings</Link>
-          <Link href="/categories">Categories</Link>
-          <Link href="/reports">Reports</Link>
-          <Link href="/moderation">Moderation</Link>
-          <Link href="/featured">Featured</Link>
-          <Link href="/analytics">Analytics</Link>
-          <Link href="/audit-logs">Audit logs</Link>
-          <Link href="/settings">Settings</Link>
-          <Link href="/login">Login</Link>
+          {LINKS.map(([href, label]) => (
+            <Link key={href} href={href}>
+              {label}
+            </Link>
+          ))}
         </nav>
-      </header>
+      </aside>
       <main className={styles.main}>{children}</main>
-      <footer className={styles.footer}>Admin access is enforced server-side — UI visibility is not security.</footer>
     </div>
   );
 }
