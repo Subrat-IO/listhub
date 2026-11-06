@@ -1,0 +1,62 @@
+.hero {
+  height: 70px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: radial-gradient(1200px 120px at 10% 0%, color-mix(in oklab, var(--brand) 35%, transparent), transparent),
+    linear-gradient(180deg, color-mix(in oklab, var(--surface) 90%, var(--brand)), var(--surface));
+  overflow: hidden;
+}
+
+.inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 14px;
+}
+
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.ctaRow {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.primary,
+.secondary {
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.primary {
+  border-color: color-mix(in oklab, var(--brand) 55%, var(--border));
+  background: color-mix(in oklab, var(--brand) 14%, var(--surface2));
+}
+
+@media (max-width: 720px) {
+  .inner {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .ctaRow {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
